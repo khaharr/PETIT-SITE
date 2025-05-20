@@ -1,83 +1,46 @@
-voici le backlog FICHIERS
-Description
+<template>
+    <div>
+        <!-- environnment -->
+        <div class="fr-select-group">
+            <label class="fr-label" for="select">Environnement </label>
+            <select class="fr-select" id="select" name="select">
+                <option value="" selected disabled>Sélectionner un environnment</option>
+                <option value="1">TIPI</option>
+                <option value="2">TIPI-CLIENT</option>
+            </select>
+        </div>
+        <!-- zone -->
+        <div class="fr-select-group">
+            <label class="fr-label" for="select">Zone </label>
+            <select class="fr-select" id="select" name="select">
+                <option value="" selected disabled>Sélectionner une zone</option>
+                <option value="1">ZA</option>
+                <option value="2">ZU</option>
+            </select>
+        </div>
+        <!-- catégorie -->
+        <div class="fr-select-group">
+            <label class="fr-label" for="select">Catégorie </label>
+            <select class="fr-select" id="select" name="select">
+                <option value="" selected disabled>Sélectionner une catégorie</option>
+                <option value="1">nominoe</option>
+                <option value="2"></option>
+            </select>
+        </div>
 
-EN TANT QU’utilisateur je dois pouvoir déposer et récupérer des fichiers de batch
-
-    Déposer des fichiers : L'utilisateur doit pouvoir choisir différents paramètres pour le dépôt de fichiers, tels que la zone, l'environnement, le type de fichiers et la catégorie. Il doit également avoir un visuel sur les fichiers qu'il souhaite déposer.
-
-    Récupérer des fichiers : L'utilisateur doit pouvoir choisir les paramètres nécessaires pour récupérer des fichiers, similaires à ceux du dépôt.
-
-Contraintes
-
-    Format des fichiers : Les fichiers téléchargés doivent être au format ZIP.
-
-    Extensions et taille : Les fichiers déposés doivent respecter certaines contraintes, notamment avoir la bonne extension et ne pas dépasser une taille maximale définie. ngarantit que seuls les fichiers conformes aux spécifications peuvent être traités.
-
-
-  mon uml telecharger des fichiers Nom : Télécharger  des fichiers
-Données d'entrée :  Le cas d'utilisation commence lorsque l’utilisateur est authentifié
-Description : L’utilisateur peut récupérer plusieurs fichiers en une seule opération, avec des filtres précis pour affiner la sélection, et recevoir un fichier compressé (.zip) une fois les options validées.
-Scénario principal :  
-                        utilisateurs                           
-                        système
-1.L’utilisateur accède à “Les fichiers” depuis le tableau de bord. Et sélectionne «récupérer les fichiers»
-
-
-
-
-
-3.L’utilisateur sélectionne les critères de filtre (type de fichier, tipi/tipi-client, ZA/ZU).
- 
-
-
-5.L’utilisateur sélectionne un ou plusieurs fichiers dans la liste affichée.
- 
-
-
-
-
-
-7.L’utilisateur appuie sur “Télécharger”.
-
-
-
-
-
-
-
-
-
-2.Le système propose directement une interface de sélection de fichiers.
-
-
-
-
-
-
-
-
-
-
-
-
-4.Le système ajuste en temps réel la liste de fichiers disponibles sans avoir besoin de valider chaque filtre.
-
-
-
-
-
-6.Le système propose de sélectionner  chaque fichier, facilitant la sélection rapide.
-
-
-
-
-
-
-
-8.Le système génère automatiquement un fichier compressé (.zip) contenant les fichiers sélectionnés.
-
-
-Scénario d'erreur :
-8a.En cas de dépassement de la limite de taille de fichier, le système propose d’envoyer les fichiers par e-mail ou de réduire la sélection.
- b. Si les fichiers ne peuvent pas être récupérés à cause d’un problème serveur, une notification s’affiche et l’utilisateur peut relancer la requête. 
-  
+        <div class="fr-upload-group">
+            <label class="fr-label" for="file-upload"
+                >Ajouter des fichiers
+                <span class="fr-hint-text">
+                    Taille maximale : 500 Mo. Formats supportés : jpg, png, pdf. Plusieurs fichiers
+                    possibles.</span
+                >
+            </label>
+            <input class="fr-upload" type="file" id="file-upload" name="file-upload" />
+        </div>
+    </div>
+</template>
+<script>
+export default {};
+</script>
+<style lang=""></style>
