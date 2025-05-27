@@ -1,21 +1,120 @@
-// src/api/categories.js
-export const getCategories = (environnement, zone) => {
-  // On simule une API avec des données différentes selon les choix
-  const data = {
-    'TIPI': {
-      'ZA': ['Nominoe', 'Gaïa'],
-      'ZU': ['Iris']
-    },
-    'TIPI-CLIENT': {
-      'ZA': ['Cerbère', 'Argos'],
-      'ZU': ['Hermès']
-    }
-  };
+<template>
+    <div>
+        <!-- Environnement -->
+        <div class="fr-select-group">
+            <label class="fr-label" for="environnement">Environnement</label>
+            <select
+                class="fr-select"
+                id="environnement"
+                v-model="selectedEnv"
+                @change="onEnvChange"
+            >
+                <option value="" disabled selected>Sélectionner un environnement</option>
+                <option value="TIPI">TIPI</option>
+                <option value="TIPI-CLIENT">TIPI-CLIENT</option>
+            </select>
+        </div>
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const result = data[environnement]?.[zone] || [];
-      resolve(result);
-    }, 500); // simulate delay
-  });
+        <!-- Zone -->
+        <div class="fr-select-group" v-if="selectedEnv">
+            <label class="fr-label" for="zone">Zone</label>
+            <select class="fr-select" id="zone" v-model="selectedZone" @change="onZoneChange">
+                <option value="" disabled selected>Sélectionner une zone</option>
+                <option value="ZA">ZA</option>
+                <option value="ZU">ZU</option>
+            </select>
+        </div>
+
+        <!-- Categorie -->
+        <div class="fr-select-group" v-if="categories.length">
+            <label class="fr-label" for="categorie">Catégorie</label>
+            <select class="fr-select" id="categorie" v-model="selectedCategorie">
+                <option value="" disabled selected>Sélectionner une catégorie</option>
+                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+            </select>
+        </div>
+
+        <!-- Upload -->
+        <div class="fr-upload-group" v-if="selectedCategorie">
+            <label class="fr-label" for="file-upload">
+                Ajouter des fichiers
+                <span class="fr-hint-text">
+                    Taille maximale : 500 Mo. Formats supportés : jpg, png, pdf. Plusieurs fichiers
+                    possibles.
+                </span>
+            </label>
+            <input class="fr-upload" type="file" id="file-upload" multiple @change="onFileChange" />
+        </div>
+         <ul>
+      <li v-for="(file, index) in files" :key="index">
+        {{ file.name }} ({{ (file.size / 1024).toFixed(2) }} Ko)
+      </li>
+    </ul>
+        <!-- Bouton -->
+        <div class="fr-mt-3w" v-if="fileList.length">
+            <button class="fr-btn" @click="submitForm">Valider</button>
+        </div>
+
+       
+    </div>
+</template>
+
+<script>
+import { getCategories } from '@/api/categories';
+export default {
+    data() {
+        return {
+            selectedEnv: '',
+            selectedZone: '',
+            selectedCategorie: '',
+            categories: [],
+            fileList: [],
+        };
+    },
+    //reset l'env quand on le modifie
+    methods: {
+        onEnvChange() {
+            this.selectedZone = '';
+            this.selectedCategorie = '';
+            this.categories = [];
+        },
+        async onZoneChange() {
+            this.selectedCategorie = '';
+            this.categories = await getCategories(this.selectedEnv, this.selectedZone);
+        },
+        onFileChange(event) {
+            this.fileList = Array.from(event.target.files);
+        },
+        async submitForm() {
+            let formData = new FormData();
+            formData.append('catégorie', this.selectedCategorie);
+            formData.append('zone', this.selectedZone);
+            formData.append('env', this.selectedEnv);
+            this.fileList.forEach((file, index) => {
+            formData.append(`fichier_${index}`, file);
+            });
+            try {
+                const payload = {
+                    url: '/api/',
+                    options: {
+                        headers: [],
+                        method: 'POST',
+                        body: { formData },
+                    },
+                };
+
+                console.log('--------------- ');
+                await this.DGFiPFetch(payload);
+                console.log('Requete envoyé ');
+                for (const pair of formData.entries()) {
+                    console.log(`${pair[0]}:`, pair[1]);
+                }
+                
+            } catch (error) {
+                console.log(error.status);
+            }
+        },
+    },
 };
+
+</script>
