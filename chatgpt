@@ -3,7 +3,7 @@
     <!-- Environnement -->
     <div class="fr-select-group">
       <label class="fr-label" for="environnement">Environnement</label>
-      <select class="fr-select" id="environnement" v-model="selectedEnv">
+      <select class="fr-select" id="environnement" v-model="selectedEnv" @change="onEnvChange">
         <option value="" disabled selected>Sélectionner un environnement</option>
         <option value="TIPI">TIPI</option>
         <option value="TIPI-CLIENT">TIPI-CLIENT</option>
@@ -13,7 +13,7 @@
     <!-- Zone -->
     <div class="fr-select-group" v-if="selectedEnv">
       <label class="fr-label" for="zone">Zone</label>
-      <select class="fr-select" id="zone" v-model="selectedZone">
+      <select class="fr-select" id="zone" v-model="selectedZone" @change="onZoneChange">
         <option value="" disabled selected>Sélectionner une zone</option>
         <option value="ZA">ZA</option>
         <option value="ZU">ZU</option>
@@ -21,12 +21,11 @@
     </div>
 
     <!-- Catégorie -->
-    <div class="fr-select-group" v-if="selectedZone">
+    <div class="fr-select-group" v-if="categories.length">
       <label class="fr-label" for="categorie">Catégorie</label>
       <select class="fr-select" id="categorie" v-model="selectedCategorie">
         <option value="" disabled selected>Sélectionner une catégorie</option>
-        <option value="nominoe">nominoe</option>
-        <option value="autre">autre</option>
+        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
       </select>
     </div>
 
@@ -38,19 +37,72 @@
           Taille maximale : 500 Mo. Formats supportés : jpg, png, pdf. Plusieurs fichiers possibles.
         </span>
       </label>
-      <input class="fr-upload" type="file" id="file-upload" name="file-upload" multiple />
+      <input class="fr-upload" type="file" id="file-upload" multiple @change="onFileChange" />
+    </div>
+
+    <!-- Bouton -->
+    <div class="fr-mt-3w" v-if="fileList.length">
+      <button class="fr-btn" @click="submitForm">Valider</button>
     </div>
   </div>
 </template>
 
 <script>
+import { getCategories } from '@/api/categories';
+
 export default {
   data() {
     return {
       selectedEnv: '',
       selectedZone: '',
-      selectedCategorie: ''
+      selectedCategorie: '',
+      categories: [],
+      fileList: []
     };
+  },
+  methods: {
+    onEnvChange() {
+      this.selectedZone = '';
+      this.selectedCategorie = '';
+      this.categories = [];
+    },
+    async onZoneChange() {
+      this.selectedCategorie = '';
+      this.categories = await getCategories(this.selectedEnv, this.selectedZone);
+    },
+    onFileChange(event) {
+      this.fileList = Array.from(event.target.files);
+    },
+    async submitForm() {
+      const formData = new FormData();
+      formData.append('environnement', this.selectedEnv);
+      formData.append('zone', this.selectedZone);
+      formData.append('categorie', this.selectedCategorie);
+
+      this.fileList.forEach((file, index) => {
+        formData.append(`fichier_${index}`, file);
+      });
+
+      try {
+        // Simuler un fetch POST (vers une fausse API)
+        const response = await fetch('/api/submit', {
+          method: 'POST',
+          body: formData,
+        });
+
+        console.log('Requête POST envoyée (fake)');
+        console.log('FormData :');
+        for (const pair of formData.entries()) {
+          console.log(`${pair[0]}:`, pair[1]);
+        }
+
+        // Simuler une réponse
+        const fakeResponse = { success: true, message: 'Simulation terminée' };
+        console.log('Réponse (fake) :', fakeResponse);
+      } catch (error) {
+        console.error('Erreur simulée :', error);
+      }
+    }
   }
 };
 </script>
