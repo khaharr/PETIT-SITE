@@ -1,14 +1,130 @@
-index.D.TS
-export declare const useFetchStore: import("pinia").StoreDefinition<"fetch", {}, {}, {
+<template>
+    <div>
+      <h1 >Déposer vos fichiers</H1>
+        <!-- Environnement -->
+        <div class="fr-select-group fr-col-4">
+            <label class="fr-label" for="environnement">Environnement</label>
+            <select
+                class="fr-select"
+                id="environnement"
+                v-model="selectedEnv"
+                @change="onEnvChange"
+            >
+                <option value="" disabled selected>Sélectionner un environnement</option>
+                <option value="TIPI">TIPI</option>
+                <option value="TIPI-CLIENT">TIPI-CLIENT</option>
+            </select>
+        </div>
+
+        <!-- Zone -->
+         <div class="fr-grid-row">
+        <div class="fr-select-group fr-col-4" v-if="selectedEnv">
+            <label class="fr-label" for="zone">Zone</label>
+            <select class="fr-select" id="zone" v-model="selectedZone" @change="onZoneChange">
+                <option value="" disabled selected>Sélectionner une zone</option>
+                <option value="ZA">ZA</option>
+                <option value="ZU">ZU</option>
+            </select>
+        </div>
+</div>
+        <!-- Categorie -->
+        <div class="fr-select-group fr-col-4" v-if="categories.length">
+            <label class="fr-label" for="categorie">Catégorie</label>
+            <select class="fr-select" id="categorie" v-model="selectedCategorie">
+                <option value="" disabled selected>Sélectionner une catégorie</option>
+                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+            </select>
+        </div>
+
+        <!-- Upload -->
+        <div class="fr-upload-group fr-col-4" v-if="selectedCategorie">
+            <label class="fr-label" for="file-upload">
+                Ajouter des fichiers
+                <span class="fr-hint-text">
+                    Taille maximale : 500 Mo. Formats supportés : jpg, png, pdf. Plusieurs fichiers
+                    possibles.
+                </span>
+            </label>
+            <input class="fr-upload" type="file" id="file-upload" multiple @change="onFileChange" />
+        </div>
+         <ul class="fr-mt-2w" >
+      <li v-for="(file, index) in fileList" :key="index">
+        {{ file.name }} ({{ (file.size / 1024).toFixed(2) }} Ko)
+      </li>
+    </ul>
+        <!-- Bouton Valider -->
+        <div class="fr-mt-3w" v-if="fileList.length">
+            <button class="fr-btn" @click="submitForm">Valider</button>
+        </div>
+
+    </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { getCategories } from '@/api/categories'
+import { useFetchStore } from '@dgfip/clir-connect';
+const selectedEnv = ref('')
+const selectedZone = ref('')
+const selectedCategorie = ref('')
+const categories = ref([])
+const fileList = ref([])
+
+function onEnvChange() {
+  selectedZone.value = ''
+  selectedCategorie.value = ''
+  categories.value = []
+}
+
+async function onZoneChange() {
+  selectedCategorie.value = ''
+  categories.value = await getCategories(selectedEnv.value, selectedZone.value)
+}
+
+function onFileChange(event) {
+  fileList.value = Array.from(event.target.files)
+}
+
+// Soumission  formulaire
+async function submitForm() {
+  const formData = new FormData()
+  formData.append('catégorie', selectedCategorie.value)
+  formData.append('zone', selectedZone.value)
+  formData.append('env', selectedEnv.value)
+
+  fileList.value.forEach((file, index) => {
+    formData.append(`fichier_${index}`, file)
+  })
+
+  try {
+    const payload = {
+      url: '/api/',
+      options: {
+        headers: [],
+        method: 'POST',
+        body: { formData }
+      }
+    }
+
+    // Simulation de l'envoi
+    await useFetchStore.DGFiPFetch(payload)
+
+    console.log('Requête envoyée')
+    for (const pair of formData.entries()) {
+      console.log(`${pair[0]}:`, pair[1])
+    }
+  } catch (error) {
+    console.error(error?.status || error)
+  }
+}
+</script>
+et syntaxError: The requested module 'http://localhost:8081/node_modules/.vite/deps/@dgfip_clir-connect.js?v=cbbbd2d8' doesn't provide an export named: 'DGFiPFetch' et  dans node modules ici j'ai node_modules\@dgfip\clir-connect\dist\stores\fetch\index.d.ts export declare const useFetchStore: import("pinia").StoreDefinition<"fetch", {}, {}, {
     DGFiPFetch({ url, options, }: {
         url: string;
         options: RequestInit | Partial<RequestInit>;
     }): Promise<Response>;
 }>;
-node_modules\@dgfip\clir-connect\dist\stores\fetch
-
-
-export default clirConnect;
+ et ici node_modules\@dgfip\clir-connect\dist\index.d.ts export default clirConnect;
 declare namespace clirConnect {
     function install(app: any, options?: {}): void;
     function createPiniaPlugin(factoryOptions: any): () => {
