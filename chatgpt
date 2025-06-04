@@ -1,1 +1,37 @@
-Select-String -Path .\src\* -Pattern "DGFiPFetch" -Recurse
+index.D.TS
+export declare const useFetchStore: import("pinia").StoreDefinition<"fetch", {}, {}, {
+    DGFiPFetch({ url, options, }: {
+        url: string;
+        options: RequestInit | Partial<RequestInit>;
+    }): Promise<Response>;
+}>;
+node_modules\@dgfip\clir-connect\dist\stores\fetch
+
+
+export default clirConnect;
+declare namespace clirConnect {
+    function install(app: any, options?: {}): void;
+    function createPiniaPlugin(factoryOptions: any): () => {
+        authStore: any;
+    };
+    namespace stores {
+        export { useUserStore };
+        export { useFetchStore };
+        export { useErrorStore };
+        export namespace factories {
+            export { useApplicationSettingsStoreFactory };
+            export { useAuthStoreDACFactory };
+        }
+    }
+    namespace navigation {
+        export { middlewares };
+        export { guard };
+    }
+}
+import { useUserStore } from './stores/user';
+import { useFetchStore } from './stores/fetch';
+import { useErrorStore } from './stores/error';
+import { useApplicationSettingsStoreFactory } from './stores/applicationSettings';
+import { useAuthStoreDACFactory } from './stores/providers/authDAC';
+import * as middlewares from './middlewares';
+import guard from './naviguation/guard';
