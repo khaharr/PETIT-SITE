@@ -1,163 +1,146 @@
-je voudrai de la meme maniere que le fichier filerepository je veux récupérer des fichiers qui sont dans un tableau donc pouvoir séléctionner des fichier et appuer sur le bouton télécharger pour installer les fichiers séléctionner mais avant d'afficher le tableau je veux pouvoir séléctionner les options type de fichier (entrée/sortie) et log ensuite l'environnement (tipi et tipiclient) et la zone(za et zu) e une fois valider sa envoi une requete avec ces options et on recoit les fichiers que je stocke dans le tableau je veux pour l'instant faire des fausse requete api pour que plus tard je remplace par les vrai requete    filerepostory.vue<template>
-    <div class="fr-container">
-    <div class="fr-grid-row fr-grid-row--gutters fr-grid-row--center fr-mb-4w">
-        <div class="fr-col-sm-9 fr-col-md-6 fr-background-alt--grey fr-p-8v">
-      <h1 >Déposer vos fichiers</H1>
-        <!-- Environnement -->
-        <div class="fr-select-group fr-col-6">
-            <label class="fr-label" for="environnement">Environnement</label>
-            <select
-                class="fr-select"
-                id="environnement"
-                v-model="selectedEnv"
-                @change="onEnvChange"
-            >
-                <option value="" disabled selected>Sélectionner un environnement</option>
-                <option value="TIPI">TIPI</option>
-                <option value="TIPI-CLIENT">TIPI-CLIENT</option>
-            </select>
-        </div>
+<template>
+  <div class="fr-container fr-py-4w">
+    <h1>Téléchargement de fichiers</h1>
 
-        <!-- Zone -->
-         <div class="fr-col-6">
-        <div class="fr-select-group " v-if="selectedEnv">
-            <label class="fr-label" for="zone">Zone</label>
-            <select class="fr-select" id="zone" v-model="selectedZone" @change="onZoneChange">
-                <option value="" disabled selected>Sélectionner une zone</option>
-                <option value="ZA">ZA</option>
-                <option value="ZU">ZU</option>
-            </select>
-        </div>
-</div>
-        <!-- Categorie -->
-        <div class="fr-select-group fr-col-6" v-if="categories.length">
-            <label class="fr-label" for="categorie">Catégorie</label>
-            <select class="fr-select" id="categorie" v-model="selectedCategorie">
-                <option value="" disabled selected>Sélectionner une catégorie</option>
-                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-            </select>
-        </div>
+    <!-- Sélections -->
+    <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w">
+      <div class="fr-select-group fr-col-4">
+        <label class="fr-label" for="type">Type de fichier</label>
+        <select class="fr-select" v-model="selectedType" id="type">
+          <option disabled value="">Sélectionner un type</option>
+          <option>Entrée</option>
+          <option>Sortie</option>
+          <option>Log</option>
+        </select>
+      </div>
 
-        <!-- Upload -->
-        <div class="fr-upload-group " v-if="selectedCategorie">
-            <label class="fr-label" for="file-upload">
-                Ajouter des fichiers
-                <span class="fr-hint-text">
-                    Taille maximale : 500 Mo. Formats supportés : jpg, png, pdf. Plusieurs fichiers
-                    possibles.
-                </span>
-            </label>
-            <input class="fr-upload" type="file" id="file-upload" multiple @change="onFileChange" />
-        </div>
-         <ul class="fr-mt-2w" >
-      <li v-for="(file, index) in fileList" :key="index">
-        {{ file.name }} ({{ (file.size / 1024).toFixed(2) }} Ko)
-      </li>
-    </ul>
-        <!-- Bouton Valider -->
-        <div class="fr-mt-3w" v-if="fileList.length">
-            <button class="fr-btn" @click="submitForm">Valider</button>
-        </div>
+      <div class="fr-select-group fr-col-4">
+        <label class="fr-label" for="env">Environnement</label>
+        <select class="fr-select" v-model="selectedEnv" id="env">
+          <option disabled value="">Sélectionner un environnement</option>
+          <option>TIPI</option>
+          <option>TIPI-CLIENT</option>
+        </select>
+      </div>
+
+      <div class="fr-select-group fr-col-4">
+        <label class="fr-label" for="zone">Zone</label>
+        <select class="fr-select" v-model="selectedZone" id="zone">
+          <option disabled value="">Sélectionner une zone</option>
+          <option>ZA</option>
+          <option>ZU</option>
+        </select>
+      </div>
     </div>
-    </div>
-    </div>
-</template>
 
-<script>
-import { getCategories } from '@/api/categories';
-export default {
-    data() {
-        return {
-            selectedEnv: '',
-            selectedZone: '',
-            selectedCategorie: '',
-            categories: [],
-            fileList: [],
-        };
-    },
-    //reset l'env quand on le modifie
-    methods: {
-        onEnvChange() {
-            this.selectedZone = '';
-            this.selectedCategorie = '';
-            this.categories = [];
-        },
-        async onZoneChange() {
-            this.selectedCategorie = '';
-            this.categories = await getCategories(this.selectedEnv, this.selectedZone);
-        },
-        onFileChange(event) {
-            this.fileList = Array.from(event.target.files);
-        },
-        async submitForm() {
-            let formData = new FormData();
-            formData.append('catégorie', this.selectedCategorie);
-            formData.append('zone', this.selectedZone);
-            formData.append('env', this.selectedEnv);
-            this.fileList.forEach((file, index) => {
-            formData.append(`fichier_${index}`, file);
-            });
-            try {
-                const payload = {
-                    url: '/api/',
-                    options: {
-                        headers: [],
-                        method: 'POST',
-                        body: { formData },
-                    },
-                };
+    <button class="fr-btn" @click="fetchFiles">Rechercher</button>
 
-                await this.DGFiPFetch(payload);
-                console.log('Requete envoyé ');
-                for (const pair of formData.entries()) {
-                    console.log(`${pair[0]}:`, pair[1]);
-                }
-                
-            } catch (error) {
-                console.log(error.status);
-            }
-        },
-    },
-};
-
-</script>
-et exemple pour le tableau <template>
-    
-    <div>
-        <fr-button id="bouton1" title="Connexion" label="bouton 1" type="submit"> </fr-button>
-        <fr-button id="bouton2" title="Connexion" label="bouton 2" type="submit"> </fr-button>
-    </div>
+    <!-- Tableau de fichiers avec clir-auto-table -->
     <clir-auto-table
-	
-	caption="Liste des pilotes"
-	captionTag="h4"
-	:records="[{'numero':'1','nom':'test','prenom':'Francesco','age':'26','team':'Ducati Lenovo Team','moto':'Ducati Desmosedici GP','nation':'Italie'},{'numero':'5','nom':'ZARCO','prenom':'Johann ','age':'32','team':'Prima Pramac Racing','moto':'Ducati Desmosedici GP','nation':'France'},{'numero':'10','nom':'MARINI','prenom':'Luca','age':'25','team':'Mooney VR46 Racing Team','moto':'Ducati Desmosedici GP','nation':'Italie'},{'numero':'12','nom':'VINALES','prenom':'Maverick','age':'28','team':'Aprilia Racing','moto':'Aprilia RS-GP','nation':'Espagne'},{'numero':'20','nom':'QUARTARARO','prenom':'Fabio','age':'24','team':'Monster Energy Yamaha MotoGP Team','moto':'Yamaha YZR-M1','nation':'France'},{'numero':'21','nom':'MORBIDELLI','prenom':'Franco','age':'28','team':'Monster Energy Yamaha MotoGP Team','moto':'Yamaha YZR-M1','nation':'Italie'},{'numero':'23','nom':'BASTIANINI','prenom':'Enea','age':'25','team':'Ducati Lenovo Team','moto':'Ducati Desmosedici GP','nation':'Italie'},{'numero':'25','nom':'FERNANDEZ','prenom':'Raul','age':'22','team':'RNF MotoGP Team','moto':'Aprilia RS-GP','nation':'Espagne'},{'numero':'30','nom':'NAKAGAMI','prenom':'Takaaki','age':'31','team':'LCR Honda Idemitsu','moto':'Honda RC213V','nation':'Japon'},{'numero':'33','nom':'BINDER','prenom':'Brad','age':'27','team':'Red Bull KTM Factory Racing','moto':'KTM RC16','nation':'Sud-Africain'},{'numero':'36','nom':'MIR','prenom':'Joan','age':'25','team':'Repsol Honda Team','moto':'Honda RC213V','nation':'Espagne'},{'numero':'37','nom':'FERNANDEZ','prenom':'Augusto','age':'25','team':'Tech3 GasGas Factory Racing','moto':'GasGas','nation':'Espagne'},{'numero':'41','nom':'ESPARGARO','prenom':'Aleix','age':'33','team':'Aprilia Racing','moto':'Aprilia RS-GP','nation':'Espagne'},{'numero':'42','nom':'RINS','prenom':'Alex','age':'27','team':'LCR Honda Castrol','moto':'Honda RC213V','nation':'Espagne'},{'numero':'43','nom':'MILLER','prenom':'Jack','age':'28','team':'Red Bull KTM Factory Racing','moto':'KTM RC16','nation':'Australie'},{'numero':'44','nom':'ESPARGARO','prenom':'Pol','age':'31','team':'Tech3 GasGas Factory Racing','moto':'GasGas','nation':'Espagne'},{'numero':'49','nom':'DI GIANNANTONIO','prenom':'Fabio','age':'24','team':'Gresini Racing MotoGP','moto':'Ducati Desmosedici GP','nation':'Italie'},{'numero':'72','nom':'BEZZECCHI','prenom':'Marco','age':'24','team':'Mooney VR46 Racing Team','moto':'Ducati Desmosedici GP','nation':'Italie'},{'numero':'73','nom':'MARQUEZ','prenom':'Alex','age':'27','team':'Gresini Racing MotoGP','moto':'Ducati Desmosedici GP','nation':'Espagne'},{'numero':'88','nom':'OLIVEIRA','prenom':'Miguel','age':'28','team':'RNF MotoGP Team','moto':'Aprilia RS-GP','nation':'Portugal'},{'numero':'89','nom':'MARTIN','prenom':'Jorge','team':'Prima Pramac Racing','moto':'Ducati Desmosedici GP','age':'25','nation':'Espagne'},{'numero':'93','nom':'MARQUEZ','prenom':'Marc','age':'30','team':'Repsol Honda Team','moto':'Honda RC213V','nation':'Espagne'}]"
-	:recordsCount="undefined"
-	:filteredRecordsCount="undefined"
-	:fields="[{'key':'numero','label':'numéro','alignment':'right','tdClass':'pe-2'},{'key':'nom','alignment':'left'},{'key':'prenom','label':'prénom','alignment':'left'},{'key':'age','alignment':'right','tdClass':'pe-2'},{'key':'team','label':'équipe','alignment':'left'},{'key':'moto','alignment':'left'},{'key':'nation','label':'nationalité','alignment':'center'}]"
-	:initialStatus="{'currentPage':1,'rowsByPage':5,'sortBy':'nom','sortOrder':'','searchField':'','searchText':''}"
-	color="success"
-	:rowsByPageSelectable="true"
-	:rowsByPageSelectableList="[5,10,20,50,100]"
-	:readable="true"
-	lastModalEmitter="undefined"
-	:editable="true"
-	:deletable="true"
-	:insertable="true"
-	:refreshable="true"
-	:printable="true"
-	:downloadable="true"
-	:sortable="true"
-	:filtrable="true"
-	:customRenderers="[]"
-/>
+      v-if="files.length"
+      class="fr-mt-4w"
+      caption="Fichiers disponibles"
+      captionTag="h4"
+      :records="files"
+      :fields="fields"
+      :initialStatus="initialStatus"
+      color="info"
+      :readable="true"
+      :editable="false"
+      :deletable="false"
+      :insertable="false"
+      :refreshable="false"
+      :printable="false"
+      :downloadable="false"
+      :sortable="true"
+      :filtrable="true"
+      :rowsByPageSelectable="true"
+      :rowsByPageSelectableList="[5, 10, 20]"
+      :customRenderers="[]"
+    />
+
+    <!-- Bouton de téléchargement -->
+    <button class="fr-btn fr-btn--secondary fr-mt-3w" @click="downloadSelected">Télécharger sélection</button>
+  </div>
 </template>
+
 <script>
-
 export default {
-    
+  data() {
+    return {
+      selectedType: '',
+      selectedEnv: '',
+      selectedZone: '',
+      files: [],
+      fields: [
+        {
+          key: 'selected',
+          label: '✔',
+          alignment: 'center',
+          tdClass: 'pe-2',
+          type: 'checkbox'
+        },
+        { key: 'name', label: 'Nom du fichier', alignment: 'left' },
+        {
+          key: 'size',
+          label: 'Taille (Ko)',
+          alignment: 'right',
+          tdClass: 'pe-2',
+          formatter: (val) => (val / 1024).toFixed(2)
+        }
+      ],
+      initialStatus: {
+        currentPage: 1,
+        rowsByPage: 5,
+        sortBy: 'name',
+        sortOrder: '',
+        searchField: '',
+        searchText: ''
+      }
+    }
+  },
+  methods: {
+    fetchFiles() {
+      if (!this.selectedType || !this.selectedEnv || !this.selectedZone) {
+        alert('Veuillez remplir tous les champs.')
+        return
+      }
 
+      // Simulation d’une réponse API
+      this.files = [
+        {
+          name: `${this.selectedType}_fichier_1.txt`,
+          size: 120000,
+          selected: false
+        },
+        {
+          name: `${this.selectedType}_rapport_2.pdf`,
+          size: 450000,
+          selected: false
+        },
+        {
+          name: `${this.selectedType}_log_3.log`,
+          size: 300000,
+          selected: false
+        }
+      ]
+    },
 
-};
+    downloadSelected() {
+      const selectedFiles = this.files.filter((f) => f.selected)
+
+      if (selectedFiles.length === 0) {
+        alert('Aucun fichier sélectionné.')
+        return
+      }
+
+      selectedFiles.forEach((file) => {
+        console.log(`Simuler téléchargement de : ${file.name}`)
+        // À remplacer plus tard par une requête backend + téléchargement réel
+      })
+
+      alert(`${selectedFiles.length} fichier(s) téléchargé(s) (simulation)`)
+    }
+  }
+}
 </script>
-<style lang=""></style>
