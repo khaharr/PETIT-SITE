@@ -1,126 +1,160 @@
-en vue js en respectant le dsfr et en utilisant les module dsfr fait une page de paiement a l'entrer de la page il peut soit choisir le type de paiement Web service
-URL
-Portail ou entrer un numérot de client si le numéro de client est entre on verifie le format numéro client  ensuit on demande au back info client ensuite une fois ca validé on choisi soit Web service,URL,Portail si url choix avec ou sans facture si avec facture on demande au back la facture ou facture d'un client ensuite completion auto du formulaire avec ls donne recup si web service on complet auto formulaire si portail choix type client et on demande facture une fois formualaire complete  si url on affiche liste facture et on clique sur payer en creeant l'url de paiement toujours avec possiobilite de modif formulaire  sinon on paye on cliquant sur bouton payer et sa demande idop au backend fait que le front fait de maniere simple voici un exemple de code vue en respectant le dsfr <template>
-    <div class="fr-container">
-    <div class="fr-grid-row fr-grid-row--gutters fr-grid-row--center fr-mb-4w">
-        <div class="fr-col-sm-9 fr-col-md-6 fr-background-alt--grey fr-p-8v">
-      <h1 >Déposer vos fichiers</H1>
-        <!-- Environnement -->
-        <div class="fr-select-group fr-col-7">
-            <label class="fr-label" for="environnement">Environnement</label>
-            <select
-                class="fr-select"
-                id="environnement"
-                v-model="selectedEnv"
-                @change="onEnvChange"
-            >
-                <option value="" disabled selected>Sélectionner un environnement</option>
-                <option value="TIPI">TIPI</option>
-                <option value="TIPI-CLIENT">TIPI-CLIENT</option>
-            </select>
+<template>
+  <div class="fr-container">
+    <div class="fr-grid-row fr-grid-row--center fr-mt-4w">
+      <div class="fr-col-md-8 fr-p-4v fr-background-alt--grey">
+
+        <h1>Paiement en ligne</h1>
+
+        <!-- Saisie numéro client -->
+        <div class="fr-input-group">
+          <label class="fr-label" for="numeroClient">Numéro client (optionnel)</label>
+          <input
+            class="fr-input"
+            id="numeroClient"
+            v-model="numeroClient"
+            @blur="validerNumeroClient"
+            placeholder="Ex : 1234567890"
+          />
+          <p class="fr-error-text" v-if="erreurNumeroClient">{{ erreurNumeroClient }}</p>
         </div>
 
-        <!-- Zone -->
-         <div class="fr-col-7">
-        <div class="fr-select-group " v-if="selectedEnv">
-            <label class="fr-label" for="zone">Zone</label>
-            <select class="fr-select" id="zone" v-model="selectedZone" @change="onZoneChange">
-                <option value="" disabled selected>Sélectionner une zone</option>
-                <option value="ZA">ZA</option>
-                <option value="ZU">ZU</option>
-            </select>
-        </div>
-</div>
-        <!-- Categorie -->
-        <div class="fr-select-group fr-col-7" v-if="categories.length">
-            <label class="fr-label" for="categorie">Catégorie</label>
-            <select class="fr-select" id="categorie" v-model="selectedCategorie">
-                <option value="" disabled selected>Sélectionner une catégorie</option>
-                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-            </select>
+        <!-- Choix type de paiement -->
+        <div class="fr-select-group fr-mt-3w">
+          <label class="fr-label" for="typePaiement">Type de paiement</label>
+          <select class="fr-select" id="typePaiement" v-model="typePaiement" @change="onTypeChange">
+            <option disabled value="">Sélectionner un type</option>
+            <option value="webservice">Web service</option>
+            <option value="url">URL</option>
+            <option value="portail">Portail</option>
+          </select>
         </div>
 
-        <!-- Upload -->
-        <div class="fr-upload-group " v-if="selectedCategorie">
-            <label class="fr-label" for="file-upload">
-                Ajouter des fichiers
-                <span class="fr-hint-text">
-                    Taille maximale : 500 Mo. Formats supportés : jpg, png, pdf. Plusieurs fichiers
-                    possibles.
-                </span>
-            </label>
-            <input class="fr-upload" type="file" id="file-upload" multiple @change="onFileChange" />
+        <!-- Options spécifiques selon type -->
+        <div v-if="typePaiement === 'url'" class="fr-mt-3w">
+          <fieldset class="fr-fieldset">
+            <legend class="fr-fieldset__legend">Options URL</legend>
+            <div class="fr-radio-group">
+              <input type="radio" id="avecFacture" value="avec" v-model="urlOption" />
+              <label class="fr-label" for="avecFacture">Avec facture</label>
+            </div>
+            <div class="fr-radio-group">
+              <input type="radio" id="sansFacture" value="sans" v-model="urlOption" />
+              <label class="fr-label" for="sansFacture">Sans facture</label>
+            </div>
+          </fieldset>
         </div>
-         <ul class="fr-mt-2w" >
-      <li v-for="(file, index) in fileList" :key="index">
-        {{ file.name }} ({{ (file.size / 1024).toFixed(2) }} Ko)
-      </li>
-    </ul>
-        <!-- Bouton Valider -->
-        <div class="fr-mt-3w" v-if="fileList.length">
-            <button class="fr-btn" @click="submitForm">Valider</button>
+
+        <div v-if="typePaiement === 'portail'" class="fr-mt-3w">
+          <div class="fr-select-group">
+            <label class="fr-label" for="typeClient">Type client</label>
+            <select class="fr-select" id="typeClient" v-model="typeClient">
+              <option disabled value="">Sélectionner un type client</option>
+              <option value="particulier">Particulier</option>
+              <option value="entreprise">Entreprise</option>
+            </select>
+          </div>
         </div>
+
+        <!-- Factures si nécessaire -->
+        <div v-if="factures.length" class="fr-mt-3w">
+          <label class="fr-label">Sélectionner une facture</label>
+          <ul class="fr-mt-1w">
+            <li v-for="facture in factures" :key="facture.id">
+              <button class="fr-btn fr-btn--sm" @click="payerFacture(facture)">Payer {{ facture.reference }}</button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Formulaire auto-rempli -->
+        <div v-if="formulaireAuto.rempli" class="fr-mt-3w">
+          <h2>Informations paiement</h2>
+          <div class="fr-input-group">
+            <label class="fr-label">Nom client</label>
+            <input class="fr-input" v-model="formulaireAuto.nom" />
+          </div>
+          <div class="fr-input-group fr-mt-2w">
+            <label class="fr-label">Montant</label>
+            <input class="fr-input" v-model="formulaireAuto.montant" />
+          </div>
+        </div>
+
+        <!-- Bouton de paiement -->
+        <div class="fr-mt-4w">
+          <button class="fr-btn" @click="effectuerPaiement">Payer</button>
+        </div>
+
+      </div>
     </div>
-    </div>
-    </div>
+  </div>
 </template>
 
 <script>
-import { getCategories } from '@/api/categories';
 export default {
-    data() {
-        return {
-            selectedEnv: '',
-            selectedZone: '',
-            selectedCategorie: '',
-            categories: [],
-            fileList: [],
-        };
+  data() {
+    return {
+      numeroClient: '',
+      erreurNumeroClient: '',
+      typePaiement: '',
+      urlOption: '',
+      typeClient: '',
+      factures: [],
+      formulaireAuto: {
+        rempli: false,
+        nom: '',
+        montant: ''
+      }
+    };
+  },
+  methods: {
+    validerNumeroClient() {
+      if (this.numeroClient && !/^\d{10}$/.test(this.numeroClient)) {
+        this.erreurNumeroClient = "Le numéro client doit contenir 10 chiffres.";
+      } else {
+        this.erreurNumeroClient = "";
+        if (this.numeroClient) {
+          this.recupererInfosClient();
+        }
+      }
     },
-    //reset l'env quand on le modifie
-    methods: {
-        onEnvChange() {
-            this.selectedZone = '';
-            this.selectedCategorie = '';
-            this.categories = [];
-        },
-        async onZoneChange() {
-            this.selectedCategorie = '';
-            this.categories = await getCategories(this.selectedEnv, this.selectedZone);
-        },
-        onFileChange(event) {
-            this.fileList = Array.from(event.target.files);
-        },
-        async submitForm() {
-            let formData = new FormData();
-            formData.append('catégorie', this.selectedCategorie);
-            formData.append('zone', this.selectedZone);
-            formData.append('env', this.selectedEnv);
-            this.fileList.forEach((file, index) => {
-            formData.append(`fichier_${index}`, file);
-            });
-            try {
-                const payload = {
-                    url: '/api/',
-                    options: {
-                        headers: [],
-                        method: 'POST',
-                        body: { formData },
-                    },
-                };
-
-                await this.DGFiPFetch(payload);
-                console.log('Requete envoyé ');
-                for (const pair of formData.entries()) {
-                    console.log(`${pair[0]}:`, pair[1]);
-                }
-                
-            } catch (error) {
-                console.log(error.status);
-            }
-        },
+    async recupererInfosClient() {
+      // Simuler un appel API
+      // Remplacer par un vrai appel API vers votre backend
+      console.log(`Récupération des infos client ${this.numeroClient}`);
+      // Exemple fictif
+      this.formulaireAuto = {
+        rempli: true,
+        nom: 'Jean Dupont',
+        montant: '120.00'
+      };
+      if (this.typePaiement === 'url' && this.urlOption === 'avec') {
+        this.factures = [
+          { id: 1, reference: 'FACT123', montant: '120.00' },
+          { id: 2, reference: 'FACT456', montant: '80.00' }
+        ];
+      }
     },
+    onTypeChange() {
+      // Réinitialiser les sous-options
+      this.urlOption = '';
+      this.typeClient = '';
+      this.factures = [];
+    },
+    payerFacture(facture) {
+      console.log(`Paiement facture ${facture.reference}`);
+      // Simuler création URL paiement
+      alert(`Redirection vers paiement pour ${facture.reference} - ${facture.montant}€`);
+    },
+    effectuerPaiement() {
+      if (this.typePaiement === 'webservice') {
+        console.log('Envoi des données au web service', this.formulaireAuto);
+      } else if (this.typePaiement === 'url') {
+        console.log('Génération URL paiement');
+      } else if (this.typePaiement === 'portail') {
+        console.log('Accès portail avec type client', this.typeClient);
+      }
+      // Appel API fictif
+      alert("Paiement déclenché !");
+    }
+  }
 };
-
 </script>
-
