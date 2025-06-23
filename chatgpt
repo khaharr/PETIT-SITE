@@ -1,146 +1,126 @@
-<template>
-  <div class="fr-container fr-py-4w">
-    <h1>Téléchargement de fichiers</h1>
+en vue js en respectant le dsfr et en utilisant les module dsfr fait une page de paiement a l'entrer de la page il peut soit choisir le type de paiement Web service
+URL
+Portail ou entrer un numérot de client si le numéro de client est entre on verifie le format numéro client  ensuit on demande au back info client ensuite une fois ca validé on choisi soit Web service,URL,Portail si url choix avec ou sans facture si avec facture on demande au back la facture ou facture d'un client ensuite completion auto du formulaire avec ls donne recup si web service on complet auto formulaire si portail choix type client et on demande facture une fois formualaire complete  si url on affiche liste facture et on clique sur payer en creeant l'url de paiement toujours avec possiobilite de modif formulaire  sinon on paye on cliquant sur bouton payer et sa demande idop au backend fait que le front fait de maniere simple voici un exemple de code vue en respectant le dsfr <template>
+    <div class="fr-container">
+    <div class="fr-grid-row fr-grid-row--gutters fr-grid-row--center fr-mb-4w">
+        <div class="fr-col-sm-9 fr-col-md-6 fr-background-alt--grey fr-p-8v">
+      <h1 >Déposer vos fichiers</H1>
+        <!-- Environnement -->
+        <div class="fr-select-group fr-col-7">
+            <label class="fr-label" for="environnement">Environnement</label>
+            <select
+                class="fr-select"
+                id="environnement"
+                v-model="selectedEnv"
+                @change="onEnvChange"
+            >
+                <option value="" disabled selected>Sélectionner un environnement</option>
+                <option value="TIPI">TIPI</option>
+                <option value="TIPI-CLIENT">TIPI-CLIENT</option>
+            </select>
+        </div>
 
-    <!-- Sélections -->
-    <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w">
-      <div class="fr-select-group fr-col-4">
-        <label class="fr-label" for="type">Type de fichier</label>
-        <select class="fr-select" v-model="selectedType" id="type">
-          <option disabled value="">Sélectionner un type</option>
-          <option>Entrée</option>
-          <option>Sortie</option>
-          <option>Log</option>
-        </select>
-      </div>
+        <!-- Zone -->
+         <div class="fr-col-7">
+        <div class="fr-select-group " v-if="selectedEnv">
+            <label class="fr-label" for="zone">Zone</label>
+            <select class="fr-select" id="zone" v-model="selectedZone" @change="onZoneChange">
+                <option value="" disabled selected>Sélectionner une zone</option>
+                <option value="ZA">ZA</option>
+                <option value="ZU">ZU</option>
+            </select>
+        </div>
+</div>
+        <!-- Categorie -->
+        <div class="fr-select-group fr-col-7" v-if="categories.length">
+            <label class="fr-label" for="categorie">Catégorie</label>
+            <select class="fr-select" id="categorie" v-model="selectedCategorie">
+                <option value="" disabled selected>Sélectionner une catégorie</option>
+                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+            </select>
+        </div>
 
-      <div class="fr-select-group fr-col-4">
-        <label class="fr-label" for="env">Environnement</label>
-        <select class="fr-select" v-model="selectedEnv" id="env">
-          <option disabled value="">Sélectionner un environnement</option>
-          <option>TIPI</option>
-          <option>TIPI-CLIENT</option>
-        </select>
-      </div>
-
-      <div class="fr-select-group fr-col-4">
-        <label class="fr-label" for="zone">Zone</label>
-        <select class="fr-select" v-model="selectedZone" id="zone">
-          <option disabled value="">Sélectionner une zone</option>
-          <option>ZA</option>
-          <option>ZU</option>
-        </select>
-      </div>
+        <!-- Upload -->
+        <div class="fr-upload-group " v-if="selectedCategorie">
+            <label class="fr-label" for="file-upload">
+                Ajouter des fichiers
+                <span class="fr-hint-text">
+                    Taille maximale : 500 Mo. Formats supportés : jpg, png, pdf. Plusieurs fichiers
+                    possibles.
+                </span>
+            </label>
+            <input class="fr-upload" type="file" id="file-upload" multiple @change="onFileChange" />
+        </div>
+         <ul class="fr-mt-2w" >
+      <li v-for="(file, index) in fileList" :key="index">
+        {{ file.name }} ({{ (file.size / 1024).toFixed(2) }} Ko)
+      </li>
+    </ul>
+        <!-- Bouton Valider -->
+        <div class="fr-mt-3w" v-if="fileList.length">
+            <button class="fr-btn" @click="submitForm">Valider</button>
+        </div>
     </div>
-
-    <button class="fr-btn" @click="fetchFiles">Rechercher</button>
-
-    <!-- Tableau de fichiers avec clir-auto-table -->
-    <clir-auto-table
-      v-if="files.length"
-      class="fr-mt-4w"
-      caption="Fichiers disponibles"
-      captionTag="h4"
-      :records="files"
-      :fields="fields"
-      :initialStatus="initialStatus"
-      color="info"
-      :readable="true"
-      :editable="false"
-      :deletable="false"
-      :insertable="false"
-      :refreshable="false"
-      :printable="false"
-      :downloadable="false"
-      :sortable="true"
-      :filtrable="true"
-      :rowsByPageSelectable="true"
-      :rowsByPageSelectableList="[5, 10, 20]"
-      :customRenderers="[]"
-    />
-
-    <!-- Bouton de téléchargement -->
-    <button class="fr-btn fr-btn--secondary fr-mt-3w" @click="downloadSelected">Télécharger sélection</button>
-  </div>
+    </div>
+    </div>
 </template>
 
 <script>
+import { getCategories } from '@/api/categories';
 export default {
-  data() {
-    return {
-      selectedType: '',
-      selectedEnv: '',
-      selectedZone: '',
-      files: [],
-      fields: [
-        {
-          key: 'selected',
-          label: '✔',
-          alignment: 'center',
-          tdClass: 'pe-2',
-          type: 'checkbox'
-        },
-        { key: 'name', label: 'Nom du fichier', alignment: 'left' },
-        {
-          key: 'size',
-          label: 'Taille (Ko)',
-          alignment: 'right',
-          tdClass: 'pe-2',
-          formatter: (val) => (val / 1024).toFixed(2)
-        }
-      ],
-      initialStatus: {
-        currentPage: 1,
-        rowsByPage: 5,
-        sortBy: 'name',
-        sortOrder: '',
-        searchField: '',
-        searchText: ''
-      }
-    }
-  },
-  methods: {
-    fetchFiles() {
-      if (!this.selectedType || !this.selectedEnv || !this.selectedZone) {
-        alert('Veuillez remplir tous les champs.')
-        return
-      }
-
-      // Simulation d’une réponse API
-      this.files = [
-        {
-          name: `${this.selectedType}_fichier_1.txt`,
-          size: 120000,
-          selected: false
-        },
-        {
-          name: `${this.selectedType}_rapport_2.pdf`,
-          size: 450000,
-          selected: false
-        },
-        {
-          name: `${this.selectedType}_log_3.log`,
-          size: 300000,
-          selected: false
-        }
-      ]
+    data() {
+        return {
+            selectedEnv: '',
+            selectedZone: '',
+            selectedCategorie: '',
+            categories: [],
+            fileList: [],
+        };
     },
+    //reset l'env quand on le modifie
+    methods: {
+        onEnvChange() {
+            this.selectedZone = '';
+            this.selectedCategorie = '';
+            this.categories = [];
+        },
+        async onZoneChange() {
+            this.selectedCategorie = '';
+            this.categories = await getCategories(this.selectedEnv, this.selectedZone);
+        },
+        onFileChange(event) {
+            this.fileList = Array.from(event.target.files);
+        },
+        async submitForm() {
+            let formData = new FormData();
+            formData.append('catégorie', this.selectedCategorie);
+            formData.append('zone', this.selectedZone);
+            formData.append('env', this.selectedEnv);
+            this.fileList.forEach((file, index) => {
+            formData.append(`fichier_${index}`, file);
+            });
+            try {
+                const payload = {
+                    url: '/api/',
+                    options: {
+                        headers: [],
+                        method: 'POST',
+                        body: { formData },
+                    },
+                };
 
-    downloadSelected() {
-      const selectedFiles = this.files.filter((f) => f.selected)
+                await this.DGFiPFetch(payload);
+                console.log('Requete envoyé ');
+                for (const pair of formData.entries()) {
+                    console.log(`${pair[0]}:`, pair[1]);
+                }
+                
+            } catch (error) {
+                console.log(error.status);
+            }
+        },
+    },
+};
 
-      if (selectedFiles.length === 0) {
-        alert('Aucun fichier sélectionné.')
-        return
-      }
-
-      selectedFiles.forEach((file) => {
-        console.log(`Simuler téléchargement de : ${file.name}`)
-        // À remplacer plus tard par une requête backend + téléchargement réel
-      })
-
-      alert(`${selectedFiles.length} fichier(s) téléchargé(s) (simulation)`)
-    }
-  }
-}
 </script>
+
